@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
 	cip "github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider"
+	"github.com/aws/aws-sdk-go/aws"
 )
 
 const (
@@ -99,13 +99,16 @@ func (csrp *CognitoSRP) GetUserPoolName() string {
 
 // GetAuthParams returns the AuthParms map of values required for make
 // InitiateAuth requests
-func (csrp *CognitoSRP) GetAuthParams() map[string]string {
-	params := map[string]string{
-		"USERNAME": csrp.username,
-		"SRP_A":    bigToHex(csrp.bigA),
+func (csrp *CognitoSRP) GetAuthParams() map[string]*string {
+	srpA := bigToHex(csrp.bigA)
+	params := map[string]*string{
+		"USERNAME": &csrp.username,
+		"SRP_A":    &srpA,
 	}
+
 	if csrp.clientSecret != nil {
-		params["SECRET_HASH"], _ = csrp.GetSecretHash(csrp.username)
+		secretHash, _ := csrp.GetSecretHash(csrp.username)
+		params["SECRET_HASH"] = &secretHash
 	}
 	return params
 }
