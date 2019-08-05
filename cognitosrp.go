@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	cip "github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider"
 	"github.com/aws/aws-sdk-go/aws"
+	cip "github.com/aws/aws-sdk-go/service/cognitoidentityprovider"
 )
 
 const (
@@ -147,20 +147,21 @@ func (csrp *CognitoSRP) PasswordVerifierChallenge(challengeParms map[string]stri
 	hmacObj := hmac.New(sha256.New, hkdf)
 	hmacObj.Write([]byte(msg))
 	signature := base64.StdEncoding.EncodeToString(hmacObj.Sum(nil))
-	response := map[string]string{
-		"TIMESTAMP":                   timestamp,
-		"USERNAME":                    internalUsername,
-		"PASSWORD_CLAIM_SECRET_BLOCK": secretBlockB64,
-		"PASSWORD_CLAIM_SIGNATURE":    signature,
+	response := map[string]*string{
+		"TIMESTAMP":                   &timestamp,
+		"USERNAME":                    &internalUsername,
+		"PASSWORD_CLAIM_SECRET_BLOCK": &secretBlockB64,
+		"PASSWORD_CLAIM_SIGNATURE":    &signature,
 	}
 	if csrp.clientSecret != nil {
-		response["SECRET_HASH"], _ = csrp.GetSecretHash(internalUsername)
+		secretHash, _ := csrp.GetSecretHash(internalUsername)
+		response["SECRET_HASH"] = &secretHash
 	}
 
 	return &cip.RespondToAuthChallengeInput{
-		ChallengeName:      cip.ChallengeNameTypePasswordVerifier,
+		ChallengeName:      aws.String("PASSWORD_VERIFIER"),
 		ChallengeResponses: response,
-		ClientId:           aws.String(csrp.clientId),
+		ClientId:           &csrp.clientId,
 	}, nil
 }
 
